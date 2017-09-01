@@ -114,25 +114,24 @@ class ArubaAPI(object):
     def parse_xml(xmldata):
         """Parses ArubaOS HTTP XML
 
-        :returns: (tabular data, non-tabular data) tuple
+        :returns: {'table': []{}, 'data': [], 'namedData': {}}
         """
-        rows = []
+        table = []
         data = []
-        #print([x for x in xmldata.find('t').find('r')])
+        namedData = dict()
+
         for elem in xmldata.findall('t'):
-            if elem.attrib.get('tn'):
-                newrow = ['' for i in range(int(elem.attrib.get('nc', 0)))]
-                if newrow: 
-                    newrow[0] = elem.attrib.get('tn')
-                    rows.append(newrow)
-            rows += ([[x.text for x in y] for y in elem.findall('r')])
+            rows = [[x.text for x in y] for y in elem.findall('r')]
+            header = rows[0]
+            for row in rows[1:]:
+                table.append(dict(zip(header, row)))
+
         for elem in xmldata.findall('data'):
             if elem.attrib.get('name'):
-                data.append((elem.attrib.get('name'), elem.text))
+                assert(elem.attrib.get('name') not in namedData)
+                namedData[elem.attrib.get('name')] = elem.text
             else:
-                data.append(elem.text)
-            #rows.append([[(x.tag, x.attrib, x.text) for x in y] for y in elem.findall('r')])
-        #headers = rows[0]
-        #data = rows[1:]
-        #return {'headers': headers, 'rows': data}
-        return {'table': rows, 'data': data}
+                if elem.text is not None:
+                    data.append(elem.text)
+
+        return {'table': table, 'data': data, 'namedData': namedData}
