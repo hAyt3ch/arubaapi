@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-
 import time
 import logging
+import xml.etree.ElementTree as ET
+import requests
 try:
     from urllib.parse import quote as urlquote
 except ImportError:
     from urllib import quote as urlquote
-import xml.etree.ElementTree as ET
-import requests
 
 class ArubaAPI(object):
     """Performs CLI commands over the ArubaOS HTTPS API"""
@@ -35,7 +33,7 @@ class ArubaAPI(object):
         self.username = username
         self.password = password
         self._log = logging.getLogger('arubaapi')
-        self._cookies = {}
+        self._cookies = dict()
         self.verify = not insecure
         self.session = requests.Session()
         if not self.verify:
@@ -52,9 +50,6 @@ class ArubaAPI(object):
             uri = '{}:{}'.format(uri, self.port)
         return uri
 
-    def _headers(self):
-        return {'Origin': self._uri()}
-
     def _login(self):
         self._log.debug('logging in')
         form_data = {
@@ -65,9 +60,9 @@ class ArubaAPI(object):
             'passwd': self.password
         }
         resp = self.session.post('{}/screens/wms/wms.login'.format(self._uri()),
-                                 data=form_data, verify=self.verify) #, headers=self._headers())
+                                 data=form_data, verify=self.verify)
         self._log.debug('Login: status %s; cookies %s', resp.status_code, resp.cookies)
-        self._log.info('logged in')
+        self._log.info('logged in to {}'.format(self.device))
 
     def _logout(self):
         resp = self.session.get('{}/logout.html'.format(self._uri()), verify=self.verify)
@@ -75,13 +70,19 @@ class ArubaAPI(object):
         if resp.status_code != 404:
             self._log.error('Unexpected status code %s while logging out', resp.status_code)
         self.session = requests.Session()
-        self._log.info('logged out')
+        self._log.info('logged out of {}'.format(self.device))
 
     @staticmethod
     def _ms_time():
         return int(time.time() * 1000)
 
     def _cli_param(self, command):
+        """Returns URL parameters AOS requires for running commands
+
+        :param command: Command to run
+        :type command: str
+        :returns: URL-encoded parameter string
+        """
         return '{}@@{}&UIDARUBA={}'.format(urlquote(command), self._ms_time(),
                                            self.session.cookies[self._SESSION_COOKIE]).encode()
 
@@ -90,7 +91,7 @@ class ArubaAPI(object):
 
         :param command: Command to run
         :type command: str
-        :returns: (tabular data, non-tabular data) tuple
+        :returns: {'table': []{}, 'namedData': {}', 'data': []}
         """
         self._log.debug('running %s', command)
         resp = self.session.get('{}/screens/cmnutil/execCommandReturnResult.xml'.format(
@@ -113,8 +114,6 @@ class ArubaAPI(object):
     @staticmethod
     def parse_xml(xmldata):
         """Parses ArubaOS HTTP XML
-
-        :returns: {'table': []{}, 'data': [], 'namedData': {}}
         """
         table = []
         data = []
