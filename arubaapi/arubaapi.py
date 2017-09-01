@@ -74,11 +74,9 @@ class ArubaAPI(object):
         resp = self.session.get('{}/logout.html'.format(self._uri()), verify=self.verify)
         # For some reason it's always a 404 when logging out
         if resp.status_code != 404:
-            print('unexpected status code %s' %resp.status_code)
             self._log.error('Unexpected status code %s while logging out', resp.status_code)
         self.session = requests.Session()
         self._log.info('logged out of {}'.format(self.device))
-        print('logout')
 
     @staticmethod
     def _ms_time():
@@ -99,7 +97,7 @@ class ArubaAPI(object):
 
         :param command: Command to run
         :type command: str
-        :returns: {'table': []{}, 'namedData': {}', 'data': []}
+        :returns: {'tables': {}, 'namedData': {}', 'data': []}
         """
         self._log.debug('running %s', command)
         resp = self.session.get('{}/screens/cmnutil/execCommandReturnResult.xml'.format(
@@ -124,25 +122,41 @@ class ArubaAPI(object):
         self._logout()
 
     @staticmethod
-    def parse_xml(xmldata):
-        """Parses ArubaOS HTTP XML
-        """
+    def _parse_xml_table(xmldata):
         table = []
+        name = xmldata.attrib.get('tn')
+        rows = [[x.text for x in y] for y in xmldata.findall('r')]
+        th = xmldata.find('th')
+        if th:
+            header = [x.text for x in th.findall('h')]
+        else:
+            header = rows[0]
+            rows = rows[1:]
+        for row in rows:
+            table.append(dict(zip(header, row)))
+        return {name: table}
+
+    @staticmethod
+    def parse_xml(xmldata):
+        tables = dict()
         data = []
         namedData = dict()
-
-        for elem in xmldata.findall('t'):
-            rows = [[x.text for x in y] for y in elem.findall('r')]
-            header = rows[0]
-            for row in rows[1:]:
-                table.append(dict(zip(header, row)))
-
-        for elem in xmldata.findall('data'):
-            if elem.attrib.get('name'):
-                assert(elem.attrib.get('name') not in namedData)
-                namedData[elem.attrib.get('name')] = elem.text
-            else:
-                if elem.text is not None:
+        for elem in xmldata:
+            if elem.tag == 'data':
+                if not elem.text:
+                    continue
+                if elem.attrib.get('name'):
+                    name = elem.attrib.get('name')
+                    if name in namedData:
+                        if type(namedData[name]) is str:
+                            namedData[name] = [namedData[name]]
+                        namedData[name].append(elem.text)
+                    else:
+                        namedData[elem.attrib.get('name')] = elem.text
+                else:
                     data.append(elem.text)
-
-        return {'table': table, 'data': data, 'namedData': namedData}
+            elif elem.tag == 're':
+                data.append(ArubaAPI._parse_xml(elem))
+            elif elem.tag == 't':
+                tables.update(ArubaAPI._parse_xml_table(elem))
+        return {'tables': tables, 'data': data, 'namedData': namedData}
