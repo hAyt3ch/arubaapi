@@ -2,7 +2,6 @@
 
 import time
 import logging
-import sys
 try:
     from urllib.parse import quote as urlquote
 except ImportError:
@@ -66,10 +65,8 @@ class ArubaAPI(object):
             'passwd': self.password
         }
         resp = self.session.post('{}/screens/wms/wms.login'.format(self._uri()),
-                             data=form_data, verify=self.verify) #, headers=self._headers())
+                                 data=form_data, verify=self.verify) #, headers=self._headers())
         self._log.debug('Login: status %s; cookies %s', resp.status_code, resp.cookies)
-        authtoken = resp.cookies[self._SESSION_COOKIE]
-        #self._cookies[self._SESSION_COOKIE] = authtoken
         self._log.info('logged in')
 
     def _logout(self):
@@ -77,7 +74,6 @@ class ArubaAPI(object):
         # For some reason it's always a 404 when logging out
         if resp.status_code != 404:
             self._log.error('Unexpected status code %s while logging out', resp.status_code)
-        #del self.session.cookies[self._SESSION_COOKIE]
         self.session = requests.Session()
         self._log.info('logged out')
 
@@ -110,7 +106,7 @@ class ArubaAPI(object):
             else:
                 self._log.info('No data received for %r', command)
                 return None
-        except ET.ParseError as exc:
+        except ET.ParseError:
             raise
         return self.parse_xml(xdata)
 
