@@ -1,27 +1,5 @@
 #!/usr/bin/env python
 
-# MIT License
-#
-# Copyright (c) 2017 Kyle Birkeland
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import time
 import logging
 import sys
@@ -29,13 +7,30 @@ try:
     from urllib.parse import quote as urlquote
 except ImportError:
     from urllib import quote as urlquote
-#import urllib
 import xml.etree.ElementTree as ET
 import requests
 
 class ArubaAPI(object):
+    """Performs CLI commands over the ArubaOS HTTPS API"""
+
     _SESSION_COOKIE = 'SESSION'
+
     def __init__(self, device, username, password, port=4343, insecure=False):
+        """Instantiates an ArubaAPI object
+
+        :param device: Name or IP address of controller
+        :type device: str
+        :param username: Username to log in with
+        :type username: str
+        :param password: Password to log in with
+        :type password: str
+        :param port: Port running HTTPS server
+        :type port: int
+        :default port: 4343
+        :param insecure: Disables verification of the TLS certificate
+        :type insecure: bool
+        :default insecure: False
+        """
         self.device = device
         self.port = port
         self.username = username

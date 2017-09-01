@@ -1,9 +1,9 @@
-### ArubaAPI
+## ArubaAPI
 
 Logs into the ArubaOS web UI and issues arbitrary CLI commands.
 
 
-## Example
+### Example
 
 ```python
 import arubaapi
