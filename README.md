@@ -2,7 +2,7 @@
 
 Logs into the ArubaOS web UI and issues arbitrary CLI commands.
 
-#Note
+### Note
 Sessions will not be deleted unless `close()` is called or the `with` statement is used.
 
 ### Example
