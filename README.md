@@ -2,6 +2,8 @@
 
 Logs into the ArubaOS web UI and issues arbitrary CLI commands.
 
+#Note
+Sessions will not be deleted unless `close()` is called or the `with` statement is used.
 
 ### Example
 
@@ -44,14 +46,4 @@ will output
             'Standby IP': '0.0.0.0',
             'Status': 'Up 42d:22h:16m:41s',
             'Switch IP': '10.0.0.10'}]}
-```
-
-Also supports the `with` statement.
-
-```python
-import arubaapi
-from pprint import pprint
-
-with arubaapi.ArubaAPI('aruba-master.example.com', 'username', 'password') as connection:
-	data = connection.cli('show ap database local')
 ```
