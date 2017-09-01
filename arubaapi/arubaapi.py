@@ -35,13 +35,22 @@ import requests
 
 class ArubaAPI(object):
     _SESSION_COOKIE = 'SESSION'
-    def __init__(self, device, username, password, port=4343):
+    def __init__(self, device, username, password, port=4343, insecure=False):
         self.device = device
         self.port = port
         self.username = username
         self.password = password
         self._log = logging.getLogger('arubaapi')
         self._cookies = {}
+        self.verify = not insecure
+        self.session = requests.Session()
+        if not self.verify:
+            try:
+                from requests.packages.urllib3.exceptions import InsecureRequestWarning
+                requests.packages.urllib3.disable_warning(InsecureRequestWarning)
+            except ImportError:
+                pass
+        self._login()
 
     def _uri(self):
         uri = 'https://{}'.format(self.device)
@@ -53,6 +62,7 @@ class ArubaAPI(object):
         return {'Origin': self._uri()}
 
     def _login(self):
+        self._log.debug('logging in')
         form_data = {
             'opcode': 'login',
             'url': '/',
@@ -60,18 +70,20 @@ class ArubaAPI(object):
             'uid': self.username,
             'passwd': self.password
         }
-        resp = requests.post('{}/screens/wms/wms.login'.format(self._uri()),
-                             data=form_data) #, headers=self._headers())
+        resp = self.session.post('{}/screens/wms/wms.login'.format(self._uri()),
+                             data=form_data, verify=self.verify) #, headers=self._headers())
         self._log.debug('Login: status %s; cookies %s', resp.status_code, resp.cookies)
         authtoken = resp.cookies[self._SESSION_COOKIE]
-        self._cookies[self._SESSION_COOKIE] = authtoken
+        #self._cookies[self._SESSION_COOKIE] = authtoken
         self._log.info('logged in')
 
     def _logout(self):
-        resp = requests.get('{}/logout.html'.format(self._uri()), cookies=self._cookies)
-        if resp.status_code != 200:
-            self._log.error('Status code %s while logging out', resp.status_code)
-        del self._cookies[self._SESSION_COOKIE]
+        resp = self.session.get('{}/logout.html'.format(self._uri()), verify=self.verify)
+        # For some reason it's always a 404 when logging out
+        if resp.status_code != 404:
+            self._log.error('Unexpected status code %s while logging out', resp.status_code)
+        #del self.session.cookies[self._SESSION_COOKIE]
+        self.session = requests.Session()
         self._log.info('logged out')
 
     @staticmethod
@@ -80,7 +92,7 @@ class ArubaAPI(object):
 
     def _cli_param(self, command):
         return '{}@@{}&UIDARUBA={}'.format(urlquote(command), self._ms_time(),
-                                           self._cookies[self._SESSION_COOKIE]).encode()
+                                           self.session.cookies[self._SESSION_COOKIE]).encode()
 
     def cli(self, command):
         """Performs CLI command on ArubaOS device
@@ -90,8 +102,9 @@ class ArubaAPI(object):
         :returns: (tabular data, non-tabular data) tuple
         """
         self._log.debug('running %s', command)
-        resp = requests.get('{}/screens/cmnutil/execCommandReturnResult.xml'.format(
-            self._uri()), cookies=self._cookies, params=self._cli_param(command))
+        resp = self.session.get('{}/screens/cmnutil/execCommandReturnResult.xml'.format(
+            self._uri()), params=self._cli_param(command),
+            verify=self.verify)
         if resp.status_code != 200:
             raise ValueError('Bad status code {}'.format(resp.status_code))
         try:
@@ -103,12 +116,8 @@ class ArubaAPI(object):
                 self._log.info('No data received for %r', command)
                 return None
         except ET.ParseError as exc:
-            if sys.version_info > (3, 0, 0):
-                raise ValueError('Failed to parse {}'.format(resp.text)) from exc
-            else:
-                raise
+            raise
         return self.parse_xml(xdata)
-        #return ET.fromstring(resp.text)
 
     @staticmethod
     def parse_xml(xmldata):
