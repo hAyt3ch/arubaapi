@@ -44,6 +44,12 @@ class ArubaAPI(object):
                 pass
         self._login()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+
     def _uri(self):
         uri = 'https://{}'.format(self.device)
         if self.port:
@@ -68,9 +74,11 @@ class ArubaAPI(object):
         resp = self.session.get('{}/logout.html'.format(self._uri()), verify=self.verify)
         # For some reason it's always a 404 when logging out
         if resp.status_code != 404:
+            print('unexpected status code %s' %resp.status_code)
             self._log.error('Unexpected status code %s while logging out', resp.status_code)
         self.session = requests.Session()
         self._log.info('logged out of {}'.format(self.device))
+        print('logout')
 
     @staticmethod
     def _ms_time():
@@ -110,6 +118,10 @@ class ArubaAPI(object):
         except ET.ParseError:
             raise
         return self.parse_xml(xdata)
+
+    def close(self):
+        """Logs out of the controller"""
+        self._logout()
 
     @staticmethod
     def parse_xml(xmldata):
