@@ -1,8 +1,8 @@
 ## ArubaAPI
 
-Logs into the ArubaOS web UI and issues arbitrary CLI show commands.  This was created to alleviate the pain of screen-scraping ArubaOS output, especially tables.
+Logs into the web UI of an Aruba Controller and issues arbitrary CLI show commands.  This was created to alleviate the pain of screen-scraping ArubaOS output, especially tables.
 
-The HTTP API used is the one that the web GUI uses to gather data.  It's not terribly consistent and probably isn't guaranteed between versions.  Submit an issue or pull request if you see issues with the data you're receiving.
+The HTTP API used is the one that the web GUI uses to gather data.  It's not terribly consistent and probably isn't guaranteed between AOS versions.  Submit an issue or pull request if you see issues with the data you're receiving.
 
 There are three types of data output from the HTTP API:
  * Table data
