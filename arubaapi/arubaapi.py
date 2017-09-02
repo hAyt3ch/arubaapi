@@ -68,7 +68,7 @@ class ArubaAPI(object):
         resp = self.session.post('{}/screens/wms/wms.login'.format(self._uri()),
                                  data=form_data, verify=self.verify)
         self._log.debug('Login: status %s; cookies %s', resp.status_code, resp.cookies)
-        self._log.info('logged in to {}'.format(self.device))
+        self._log.info('logged in to %s', self.device)
 
     def _logout(self):
         resp = self.session.get('{}/logout.html'.format(self._uri()), verify=self.verify)
@@ -76,7 +76,7 @@ class ArubaAPI(object):
         if resp.status_code != 404:
             self._log.error('Unexpected status code %s while logging out', resp.status_code)
         self.session = requests.Session()
-        self._log.info('logged out of {}'.format(self.device))
+        self._log.info('logged out of %s', self.device)
 
     @staticmethod
     def _ms_time():
@@ -104,7 +104,7 @@ class ArubaAPI(object):
             self._uri()), params=self._cli_param(command),
             verify=self.verify)
         if resp.status_code != 200:
-            raise ValueError('Bad status code {}'.format(resp.status_code))
+            raise ValueError('Bad status code {}: {}'.format(resp.status_code, resp.text))
         try:
             self._log.debug('Got text %r', resp.text)
             if resp.text:
@@ -155,8 +155,8 @@ class ArubaAPI(object):
                         namedData[elem.attrib.get('name')] = elem.text
                 else:
                     data.append(elem.text)
-            elif elem.tag == 're':
-                data.append(ArubaAPI._parse_xml(elem))
             elif elem.tag == 't':
                 tables.update(ArubaAPI._parse_xml_table(elem))
+            else:
+                raise ValueError('Unknown tag {} {}'.format(elem.tag, elem.text))
         return {'tables': tables, 'data': data, 'namedData': namedData}
