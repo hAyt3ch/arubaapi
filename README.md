@@ -14,6 +14,7 @@ Config commands appear to be able to be sent through this same interface one at 
 ### Notes
  * It really doesn't like `show running-config`.  It will just hang and return no data.
  * Sessions will not be deleted unless `close()` is called or the `with` statement is used.
+ * Invalid commands return an HTTP 200 with no data, so there's currently no way to detect them.
 
 ### Example
 
@@ -28,7 +29,7 @@ connection.close()
 pprint(data, 120)
 ```
 
-will output
+Output:
 
 ```
 {'data': ['Flags: U = Unprovisioned; N = Duplicate name; G = No such group; L = Unlicensed',
