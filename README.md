@@ -5,10 +5,9 @@ Logs into the ArubaOS web UI and issues arbitrary CLI show commands.  This was c
 The HTTP API used is the one that the web GUI uses to gather data.  It's not terribly consistent and probably isn't guaranteed between versions.  Submit an issue or pull request if you see issues with the data you're receiving.
 
 There are three types of data output from the HTTP API:
-
-	* Table data
-	* Named data - Generally a key-value pair but not always.  In the case of duplicate names, the value is a list of all values seen.
-	* Anonymous data - Auxiallary data output.  Generally unstructured lines like flag legends.
+ * Table data
+ * Named data - Generally a key-value pair but not always.  In the case of duplicate names, the value is a list of all values seen.
+ * Anonymous data - Auxiallary data output.  Generally unstructured lines like flag legends.
 
 Config commands appear to be able to be sent through this same interface one at a time.  You will receive no data back from performing a config command, but it's important to note that an invalid command will also receive no data back.  It's probably a good idea to double-check that the config change stayed with a subsequent show command.
 
