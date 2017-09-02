@@ -1,3 +1,5 @@
+"""Library for retrieving semi-formatted CLI command output from ArubaOS"""
+
 import time
 import logging
 import xml.etree.ElementTree as ET
@@ -33,7 +35,6 @@ class ArubaAPI(object):
         self.username = username
         self.password = password
         self._log = logging.getLogger('arubaapi')
-        self._cookies = dict()
         self.verify = not insecure
         self.session = requests.Session()
         if not self.verify:
@@ -47,7 +48,7 @@ class ArubaAPI(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
     def _uri(self):
@@ -138,22 +139,30 @@ class ArubaAPI(object):
 
     @staticmethod
     def parse_xml(xmldata):
+        """Parses ArubaOS XML
+
+        :param xmldata: XML response
+        :type xmldata: xml.etree.ElementTree
+        """
         tables = dict()
         data = []
         namedData = dict()
         for elem in xmldata:
             if elem.tag == 'data':
                 if not elem.text:
+                    # Skip null data
                     continue
                 if elem.attrib.get('name'):
+                    # Named data
                     name = elem.attrib.get('name')
                     if name in namedData:
-                        if type(namedData[name]) is str:
+                        if isinstance(namedData[name], str):
                             namedData[name] = [namedData[name]]
                         namedData[name].append(elem.text)
                     else:
                         namedData[elem.attrib.get('name')] = elem.text
                 else:
+                    # Anonymous data
                     data.append(elem.text)
             elif elem.tag == 't':
                 tables.update(ArubaAPI._parse_xml_table(elem))
