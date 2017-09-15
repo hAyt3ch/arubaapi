@@ -93,12 +93,12 @@ class ArubaAPI(object):
         return '{}@@{}&UIDARUBA={}'.format(urlquote(command), self._ms_time(),
                                            self.session.cookies[self._SESSION_COOKIE]).encode()
 
-    def cli(self, command):
+    def cli(self, command, debug=False):
         """Performs CLI command on ArubaOS device
 
         :param command: Command to run
         :type command: str
-        :returns: {'tables': {}, 'namedData': {}', 'data': []}
+        :returns: dict
         """
         self._log.debug('running %s', command)
         resp = self.session.get('{}/screens/cmnutil/execCommandReturnResult.xml'.format(
@@ -116,7 +116,10 @@ class ArubaAPI(object):
                 return None
         except ET.ParseError:
             raise
-        return self.parse_xml(xdata)
+        if not debug:
+            return self.parse_xml(xdata)
+        else:
+            return self.parse_xml(xdata), resp.text
 
     def close(self):
         """Logs out of the controller"""
@@ -126,6 +129,7 @@ class ArubaAPI(object):
     def _parse_xml_table(xmldata):
         table = []
         name = xmldata.attrib.get('tn')
+
         rows = [[x.text for x in y] for y in xmldata.findall('r')]
         th = xmldata.find('th')
         if th:
@@ -144,9 +148,7 @@ class ArubaAPI(object):
         :param xmldata: XML response
         :type xmldata: xml.etree.ElementTree
         """
-        tables = dict()
-        data = []
-        namedData = dict()
+        ret = {'data': []}
         for elem in xmldata:
             if elem.tag == 'data':
                 if not elem.text:
@@ -155,17 +157,17 @@ class ArubaAPI(object):
                 if elem.attrib.get('name'):
                     # Named data
                     name = elem.attrib.get('name')
-                    if name in namedData:
-                        if isinstance(namedData[name], str):
-                            namedData[name] = [namedData[name]]
-                        namedData[name].append(elem.text)
+                    if name in ret:
+                        if isinstance(ret[name], str):
+                            ret[name] = [namedData[name]]
+                        ret[name].append(elem.text)
                     else:
-                        namedData[elem.attrib.get('name')] = elem.text
+                        ret[elem.attrib.get('name')] = elem.text
                 else:
                     # Anonymous data
-                    data.append(elem.text)
+                    ret['data'].append(elem.text)
             elif elem.tag == 't':
-                tables.update(ArubaAPI._parse_xml_table(elem))
+                ret.update(ArubaAPI._parse_xml_table(elem))
             else:
                 raise ValueError('Unknown tag {} {}'.format(elem.tag, elem.text))
-        return {'tables': tables, 'data': data, 'namedData': namedData}
+        return ret
