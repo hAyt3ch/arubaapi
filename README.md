@@ -5,9 +5,9 @@ Logs into the web UI of an Aruba Controller and issues arbitrary CLI show comman
 The HTTP API used is the one that the web GUI uses to gather data.  It's not terribly consistent and probably isn't guaranteed between AOS versions.  Submit an issue or pull request if you see issues with the data you're receiving.
 
 There are three types of data output from the HTTP API:
- * Table data
+ * Table data - Key is name of the table.  Value is list of {key: value} dicts.
  * Named data - Generally a key-value pair but not always.  In the case of duplicate names, the value is a list of all values seen.
- * Anonymous data - Auxiallary data output.  Generally unstructured lines like flag legends.
+ * Anonymous data - Auxiallary data output.  Generally unstructured lines like flag legends.  Stored under the 'data' key as a list.
 
 Config commands appear to be able to be sent through this same interface one at a time.  You will receive no data back from performing a config command, but it's important to note that an invalid command will also receive no data back.  It's probably a good idea to double-check that the config change stayed with a subsequent show command.
 
@@ -40,21 +40,21 @@ Output:
           '       u = Custom-Cert RAP; S = Standby-mode AP; J = USB cert at AP',
           '       i = Indoor; o = Outdoor',
           '       M = Mesh node; Y = Mesh Recovery'],
- 'namedData': {'Total APs': '2'},
- 'tables': {'AP Database': [{'AP Type': '135',
-                             'Flags': None,
-                             'Group': 'AP Group 1',
-                             'IP Address': '10.0.0.12',
-                             'Name': 'AP 1',
-                             'Standby IP': '0.0.0.0',
-                             'Status': 'Down',
-                             'Switch IP': '10.0.0.10'},
-                            {'AP Type': '277',
-                             'Flags': None,
-                             'Group': 'AP Group 1',
-                             'IP Address': '10.0.0.99',
-                             'Name': 'AP 2',
-                             'Standby IP': '0.0.0.0',
-                             'Status': 'Up 43d:0h:23m:54s',
-                             'Switch IP': '10.0.0.10'}]}}
+ 'Total APs': '2',
+ 'AP Database': [{'AP Type': '135',
+                  'Flags': None,
+                  'Group': 'AP Group 1',
+                  'IP Address': '10.0.0.12',
+                  'Name': 'AP 1',
+                  'Standby IP': '0.0.0.0',
+                  'Status': 'Down',
+                  'Switch IP': '10.0.0.10'},
+                 {'AP Type': '277',
+                  'Flags': None,
+                  'Group': 'AP Group 1',
+                  'IP Address': '10.0.0.99',
+                  'Name': 'AP 2',
+                  'Standby IP': '0.0.0.0',
+                  'Status': 'Up 43d:0h:23m:54s',
+                  'Switch IP': '10.0.0.10'}]}
 ```
