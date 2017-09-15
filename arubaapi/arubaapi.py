@@ -126,11 +126,29 @@ class ArubaAPI(object):
         self._logout()
 
     @staticmethod
+    def _hacky_table(table_name):
+        """Checks for tables which have no headers and should be named data"""
+        return table_name in ['Power Status']
+
+    @staticmethod
+    def _parse_hacky_xml_table(xmldata):
+        """Parses tables which should actually be named data"""
+        data = dict()
+        name = xmldata.attrib.get('tn')
+        rows = [[x.text for x in y] for y in xmldata.findall('r')]
+        for row in rows:
+            data[row[0]] = row[1]
+        return {name: data}
+
+    @staticmethod
     def _parse_xml_table(xmldata):
         table = []
         name = xmldata.attrib.get('tn')
 
         rows = [[x.text for x in y] for y in xmldata.findall('r')]
+        if ArubaAPI._hacky_table(name):
+            rows = list(zip(*rows))
+
         th = xmldata.find('th')
         if th:
             header = [x.text for x in th.findall('h')]
